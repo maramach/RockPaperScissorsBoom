@@ -25,6 +25,8 @@ namespace RockPaperScissorsBoom.Server.Pages
         public List<BotRecord> BotRankings { get; set; }
         public List<FullResults> AllFullResults { get; set; }
 
+        public List<GameRecord> GamesForTable { get; set; }
+
         public RunTheGameModel(ApplicationDbContext db, IMetrics metrics, IConfiguration configuration, IMessagingHelper messageHelper)
         {
             this.db = db;
@@ -42,6 +44,8 @@ namespace RockPaperScissorsBoom.Server.Pages
                 .FirstOrDefault();
             BotRankings = gameRecord?.BotRecords ?? new List<BotRecord>();
             AllFullResults = new List<FullResults>();
+
+            GamesForTable = db.GameRecords.OrderByDescending(g => g.GameDate).Take(20).Include(g => g.BotRecords).ToList();
         }
 
         public async Task OnPostAsync()
@@ -79,7 +83,12 @@ namespace RockPaperScissorsBoom.Server.Pages
             BotRankings = gameRunnerResult.GameRecord.BotRecords.OrderByDescending(x => x.Wins).ToList();
             AllFullResults = gameRunnerResult.AllMatchResults.OrderBy(x => x.Competitor.Name).ToList();
 
+            //Get 20 Last 
+            GamesForTable = db.GameRecords.OrderByDescending(g => g.GameDate).Take(20).Include(g => g.BotRecords).ToList();
+
             await PublishMessage(BotRankings.First().GameRecord.Id.ToString(), BotRankings.First().Competitor.Name);
+
+
         }
 
         internal async Task PublishMessage(string GameId, string Winner)
